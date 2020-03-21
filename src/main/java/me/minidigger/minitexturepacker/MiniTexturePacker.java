@@ -2,6 +2,7 @@ package me.minidigger.minitexturepacker;
 
 import java.awt.image.BufferedImage;
 import java.awt.image.RescaleOp;
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.FileVisitResult;
 import java.nio.file.FileVisitor;
@@ -12,6 +13,8 @@ import java.nio.file.attribute.BasicFileAttributes;
 import javax.imageio.ImageIO;
 
 public class MiniTexturePacker {
+
+    public static final String S = File.separator;
 
     public static void main(String[] args) {
         if (args.length != 2) {
@@ -69,11 +72,11 @@ public class MiniTexturePacker {
 
     private void copySplashes() {
         System.out.print("Copying splashes... ");
-        String name = "assets\\minecraft\\texts\\splashes.txt";
+        String name = "assets" + S + "minecraft" + S + "texts" + S + "splashes.txt";
         Path splashes = patch.resolve(name);
         if (Files.isRegularFile(splashes)) {
             try {
-                Files.createDirectories(output.resolve("assets\\minecraft\\texts"));
+                Files.createDirectories(output.resolve("assets" + S + "minecraft" + S + "texts"));
             } catch (IOException e) {
                 System.out.println("Error creating texts folder: " + e.getClass().getName() + ": " + e.getMessage());
             }
@@ -90,11 +93,11 @@ public class MiniTexturePacker {
 
     private void copyFont() {
         System.out.print("Copying font... ");
-        String name = "assets\\minecraft\\font\\glyph_sizes.bin";
+        String name = "assets" + S + "minecraft" + S + "font" + S + "glyph_sizes.bin";
         Path splashes = patch.resolve(name);
         if (Files.isRegularFile(splashes)) {
             try {
-                Files.createDirectories(output.resolve("assets\\minecraft\\font"));
+                Files.createDirectories(output.resolve("assets" + S + "minecraft" + S + "font"));
             } catch (IOException e) {
                 System.out.println("Error creating font folder: " + e.getClass().getName() + ": " + e.getMessage());
             }
@@ -111,7 +114,7 @@ public class MiniTexturePacker {
 
     private void copySoundsJson() {
         System.out.print("Copying sounds.json... ");
-        String name = "assets\\minecraft\\sounds.json";
+        String name = "assets" + S + "minecraft" + S + "sounds.json";
         Path splashes = patch.resolve(name);
         if (Files.isRegularFile(splashes)) {
             try {
@@ -132,7 +135,7 @@ public class MiniTexturePacker {
         if (brightenFactor != 1) {
             System.out.print("Also brighten it with factor " + brightenFactor + "... ");
         }
-        String folderName = "assets\\minecraft\\" + name;
+        String folderName = "assets" + S + "minecraft" + S + "" + name;
         try {
             Files.createDirectories(output.resolve(folderName));
         } catch (IOException e) {
@@ -187,7 +190,7 @@ public class MiniTexturePacker {
         try {
             Files.list(newOriginal).parallel().forEach(file -> {
                 if (Files.isDirectory(file)) {
-                    copyFolder(folderPath + "\\" + subFolderName, file, brightenFactor);
+                    copyFolder(folderPath + "" + S + "" + subFolderName, file, brightenFactor);
                 } else if (Files.isRegularFile(file)) {
                     copyFitting(file.getFileName().toString(), newOriginal, newPatch, newOutput, brightenFactor);
                 }

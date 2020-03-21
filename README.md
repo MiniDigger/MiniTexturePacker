@@ -36,7 +36,7 @@ stuff/
     └── pack.png
 ```
 
-And then run `java -jar minitexturepacker.jar \path\to\stuff`
+And then run `java -jar minitexturepacker.jar \path\to\stuff <brighten factor>`
 
 It currently handles the following things:
 * pack.mcmeta + pack.png
