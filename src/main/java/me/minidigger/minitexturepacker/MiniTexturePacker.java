@@ -18,7 +18,7 @@ public class MiniTexturePacker {
         float brightenFactor = Float.parseFloat(args[1]);
 
         new MiniTexturePacker(mainDir.resolve("original"), mainDir.resolve("patch"), mainDir.resolve("output")).patch(brightenFactor);
-        new MiniModelCreator( mainDir.resolve("patch"), mainDir.resolve("output"), "dyescape", "diamond_sword").process();
+        new MiniModelCreator(mainDir.resolve("patch"), mainDir.resolve("output"), "dyescape", "diamond_sword").process();
     }
 
     private final Path original;
@@ -48,10 +48,14 @@ public class MiniTexturePacker {
         System.out.print("Cleaning output... ");
         try {
             Util.deleteDir(output);
+        } catch (IOException e) {
+            System.out.print("Error while cleaning output: " + e.getClass().getName() + ": " + e.getMessage());
+        }
+        try {
             Files.createDirectories(output);
             System.out.println("Done!");
         } catch (IOException e) {
-            System.out.println("Error while cleaning output: " + e.getClass().getName() + ": " + e.getMessage());
+            System.out.println("Error while creating output: " + e.getClass().getName() + ": " + e.getMessage());
         }
     }
 
@@ -197,7 +201,7 @@ public class MiniTexturePacker {
 
     private void copyNewFiles(Path newPatch, Path newOutput, float brightenFactor) {
         try {
-            if(!Files.exists(newOutput)) {
+            if (!Files.exists(newOutput)) {
                 Files.createDirectories(newOutput);
             }
 
