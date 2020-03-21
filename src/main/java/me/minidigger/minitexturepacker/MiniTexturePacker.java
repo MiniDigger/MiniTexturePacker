@@ -1,20 +1,13 @@
 package me.minidigger.minitexturepacker;
 
-import java.awt.image.BufferedImage;
-import java.awt.image.RescaleOp;
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.FileVisitResult;
-import java.nio.file.FileVisitor;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
-import java.nio.file.attribute.BasicFileAttributes;
-import javax.imageio.ImageIO;
 
 public class MiniTexturePacker {
 
-    public static final String S = File.separator;
+    private static final String S = File.separator;
 
     public static void main(String[] args) {
         if (args.length != 2) {
@@ -25,6 +18,7 @@ public class MiniTexturePacker {
         float brightenFactor = Float.parseFloat(args[1]);
 
         new MiniTexturePacker(mainDir.resolve("original"), mainDir.resolve("patch"), mainDir.resolve("output")).patch(brightenFactor);
+        new MiniModelCreator( mainDir.resolve("patch"), mainDir.resolve("output"), "dyescape", "diamond_sword").process();
     }
 
     private final Path original;
@@ -48,13 +42,12 @@ public class MiniTexturePacker {
         copyFolder("blockstates", 1);
         copySplashes();
         copyFont();
-        // TODO blockstates and models
     }
 
     private void cleanOutput() {
         System.out.print("Cleaning output... ");
         try {
-            deleteDir(output);
+            Util.deleteDir(output);
             Files.createDirectories(output);
             System.out.println("Done!");
         } catch (IOException e) {
@@ -219,7 +212,7 @@ public class MiniTexturePacker {
                                 // if its a file we can just copy, assuming its actually a new file
                                 if (!Files.isRegularFile(newOutput.resolve(fileName))) {
                                     try {
-                                        copyAndBrighten(newPatch.resolve(fileName), newOutput.resolve(fileName), brightenFactor);
+                                        Util.copyAndBrighten(newPatch.resolve(fileName), newOutput.resolve(fileName), brightenFactor);
                                     } catch (IOException e) {
                                         System.out.println("Error while coyping file " + newPatch.resolve(fileName) + " : " + e.getClass().getName() + ": " + e.getMessage());
                                     }
@@ -243,82 +236,10 @@ public class MiniTexturePacker {
         }
 
         try {
-            copyAndBrighten(file, output.resolve(name), brightenFactor);
+            Util.copyAndBrighten(file, output.resolve(name), brightenFactor);
         } catch (IOException e) {
             System.err.println("Error while copying " + name + ": " + e.getClass().getName() + ": " + e.getMessage());
         }
     }
 
-    private void deleteDir(Path path) throws IOException {
-        Files.walkFileTree(path, new FileVisitor<>() {
-
-            @Override
-            public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
-                Files.delete(dir);
-                return FileVisitResult.CONTINUE;
-            }
-
-            @Override
-            public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) {
-                return FileVisitResult.CONTINUE;
-            }
-
-            @Override
-            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-                Files.delete(file);
-                return FileVisitResult.CONTINUE;
-            }
-
-            @Override
-            public FileVisitResult visitFileFailed(Path file, IOException exc) {
-                System.err.println(exc.toString());
-                return FileVisitResult.CONTINUE;
-            }
-        });
-    }
-
-    private void copyAndBrighten(Path input, Path output, float factor) throws IOException {
-        if (factor != 1 && input.toString().endsWith(".png") && input.toString().contains("/blocks/")) {
-            BufferedImage in = ImageIO.read(input.toFile());
-            if (in == null) {
-                System.out.println("Couldnt brighten " + input.toString() + ", just copy OG");
-                Files.copy(input, output, StandardCopyOption.REPLACE_EXISTING);
-                return;
-            }
-            BufferedImage out = brighten(in, factor, input.toString());
-            if (out == null) {
-                return;
-            }
-            ImageIO.write(out, "png", output.toFile());
-        } else {
-            Files.copy(input, output, StandardCopyOption.REPLACE_EXISTING);
-        }
-    }
-
-    private BufferedImage brighten(BufferedImage image, float factor, String debugName) {
-        try {
-            float[] factors = new float[]{
-                    factor, factor, factor, 1f
-            };
-            float[] offsets = new float[]{
-                    0.0f, 0.0f, 0.0f, 0.0f
-            };
-            RescaleOp op = new RescaleOp(factors, offsets, null);
-            return op.filter(image, null);
-        } catch (IllegalArgumentException ex) {
-            try {
-                float[] factors = new float[]{
-                        1.4f, 1.4f, 1.4f
-                };
-                float[] offsets = new float[]{
-                        0.0f, 0.0f, 0.0f
-                };
-                RescaleOp op = new RescaleOp(factors, offsets, null);
-                return op.filter(image, null);
-            } catch (IllegalArgumentException ex2) {
-                System.out.println("Couldnt brighten " + debugName + ": " + ex2.getMessage());
-                return null;
-            }
-        }
-    }
 }
