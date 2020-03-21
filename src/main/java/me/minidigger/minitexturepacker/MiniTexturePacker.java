@@ -204,7 +204,7 @@ public class MiniTexturePacker {
 
     private void copyNewFiles(Path newPatch, Path newOutput, float brightenFactor) {
         try {
-            if (Files.exists(newPatch)) {
+            if (Files.exists(newPatch) && Files.isDirectory(newPatch)) {
                 Files.list(newPatch).parallel()
                         .forEach(file -> {
                             String fileName = file.getFileName().toString();
