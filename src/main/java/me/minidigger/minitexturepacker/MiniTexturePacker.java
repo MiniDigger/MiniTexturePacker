@@ -204,13 +204,17 @@ public class MiniTexturePacker {
 
     private void copyNewFiles(Path newPatch, Path newOutput, float brightenFactor) {
         try {
+            if(!Files.exists(newOutput)) {
+                Files.createDirectories(newOutput);
+            }
+
             if (Files.exists(newPatch) && Files.isDirectory(newPatch)) {
                 Files.list(newPatch).parallel()
                         .forEach(file -> {
                             String fileName = file.getFileName().toString();
                             if (Files.isDirectory(file)) {
                                 // if its a dir, we need to go one step deeper
-                                copyNewFiles(newPatch.resolve(file), newOutput.resolve(file), brightenFactor);
+                                copyNewFiles(newPatch.resolve(fileName), newOutput.resolve(fileName), brightenFactor);
                             } else if (Files.isRegularFile(file)) {
                                 // if its a file we can just copy, assuming its actually a new file
                                 if (!Files.isRegularFile(newOutput.resolve(fileName))) {
