@@ -37,7 +37,7 @@ public class MiniModelCreator {
         List<Path> models = findModels(modelDir);
 
         Path mappingFile = input.resolve(mappingFileName);
-        Map<Path, Integer> mapping = loadMappings(mappingFile);
+        Map<String, Integer> mapping = loadMappings(mappingFile);
         processMappings(modelDir, models, mapping);
         writeMappings(mapping, mappingFile);
 
@@ -67,35 +67,36 @@ public class MiniModelCreator {
         }
     }
 
-    private void processMappings(Path modelDir, List<Path> models, Map<Path, Integer> mappings) {
+    private void processMappings(Path modelDir, List<Path> models, Map<String, Integer> mappings) {
         models.forEach(model -> {
             Path newPath = modelDir.relativize(model);
-            if (!mappings.containsKey(newPath)) {
+            String path = newPath.toString().replace("/", "|").replace("\\", "|");
+            if (!mappings.containsKey(path)) {
                 System.out.println("Creating new mapping for new model " + newPath + ": " + (mappings.size() + 1));
-                mappings.put(newPath, mappings.size() + 1);
+                mappings.put(path, mappings.size() + 1);
             }
         });
     }
 
-    private void writeMappings(Map<Path, Integer> mappings, Path mappingFile) {
+    private void writeMappings(Map<String, Integer> mappings, Path mappingFile) {
         System.out.print("Writing mappings... ");
         try (PrintWriter writer = new PrintWriter(Files.newBufferedWriter(mappingFile))) {
-            mappings.forEach((path, id) -> writer.println(path.toString().replace(".json", "").replace(S, " ") + "," + id + "," + path.toString()));
+            mappings.forEach((path, id) -> writer.println(path.replace(".json", "").replace("|", " ") + "," + id + "," + path));
             System.out.println("Done!");
         } catch (IOException ex) {
             System.out.println("Error while writing mappings: " + ex.getClass().getSimpleName() + ": " + ex.getMessage());
         }
     }
 
-    private Map<Path, Integer> loadMappings(Path mappingFile) {
+    private Map<String, Integer> loadMappings(Path mappingFile) {
         System.out.print("Loading mappings... ");
-        Map<Path, Integer> mappings = new TreeMap<>(Comparator.comparing(Path::toString));
+        Map<String, Integer> mappings = new TreeMap<>();
         try {
             Files.readAllLines(mappingFile).forEach(line -> {
                 String[] s = line.split(",");
 //                String name = s[0];
                 int id = Integer.parseInt(s[1]);
-                Path path = Path.of(s[2]);
+                String path = s[2];
 
                 mappings.put(path, id);
             });
@@ -129,7 +130,7 @@ public class MiniModelCreator {
         return models;
     }
 
-    private void copyItemAndWriteModels(Path inputFile, Path outputFile, Map<Path, Integer> mappings) {
+    private void copyItemAndWriteModels(Path inputFile, Path outputFile, Map<String, Integer> mappings) {
         if (!Files.isDirectory(outputFile.getParent())) {
             System.out.print("Creating output dir... ");
             try {
@@ -144,7 +145,7 @@ public class MiniModelCreator {
             Files.readAllLines(inputFile).forEach(line -> {
                 if (line.contains("%mini_model_creator_marker%")) {
                     mappings.forEach((path, id) -> {
-                        String properPath = namespace + ":" + path.toString().replace("\\", "/").replace(".json", "");
+                        String properPath = namespace + ":" + path.replace("|", "/").replace(".json", "");
                         writer.println(String.format(template, id, properPath));
                     });
 
