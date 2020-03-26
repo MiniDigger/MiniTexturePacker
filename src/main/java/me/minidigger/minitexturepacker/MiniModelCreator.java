@@ -9,7 +9,6 @@ import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -144,9 +143,9 @@ public class MiniModelCreator {
         try (PrintWriter writer = new PrintWriter(Files.newBufferedWriter(outputFile))) {
             Files.readAllLines(inputFile).forEach(line -> {
                 if (line.contains("%mini_model_creator_marker%")) {
-                    mappings.forEach((path, id) -> {
-                        String properPath = namespace + ":" + path.replace("|", "/").replace(".json", "");
-                        writer.println(String.format(template, id, properPath));
+                    mappings.entrySet().stream().sorted(Map.Entry.comparingByValue()).forEach((entry) -> {
+                        String properPath = namespace + ":" + entry.getKey().replace("|", "/").replace(".json", "");
+                        writer.println(String.format(template, entry.getValue(), properPath));
                     });
 
                     writer.println("\t\t{ \"predicate\": {\"custom_model_data\":  13371337}, \"model\": \"dyescape:items/steel_mace\"}"); // dummy to fix trailing semicolon
