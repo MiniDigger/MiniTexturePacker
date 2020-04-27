@@ -216,6 +216,11 @@ public class MiniTexturePacker {
                                 // if its a file we can just copy, assuming its actually a new file
                                 if (!Files.isRegularFile(newOutput.resolve(fileName))) {
                                     try {
+                                        // 0 file in patch? -> skip
+                                        if (Files.size(file) == 0) {
+                                            return;
+                                        }
+
                                         Util.copyAndBrighten(newPatch.resolve(fileName), newOutput.resolve(fileName), brightenFactor);
                                     } catch (IOException e) {
                                         System.out.println("Error while coyping file " + newPatch.resolve(fileName) + " : " + e.getClass().getName() + ": " + e.getMessage());
@@ -233,6 +238,16 @@ public class MiniTexturePacker {
         Path file = patch.resolve(name);
         if (!Files.isRegularFile(file)) {
             file = original.resolve(name);
+        } else {
+            try {
+                // 0 file in patch? -> skip
+                if (Files.size(file) == 0) {
+                   return;
+                }
+            } catch (IOException e) {
+                System.err.println("Can't read file " + name + " in patch to figure out its size!");
+                return;
+            }
         }
         if (!Files.isRegularFile(file)) {
             System.err.println("Couldn't copy file " + name + " since it neither exist in patch nor in original");

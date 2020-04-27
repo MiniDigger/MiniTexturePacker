@@ -56,6 +56,8 @@ It currently handles the following things:
 
 Unless overwise noted, it will copy original to output, but first looks into patch for an updates file, then copies all new files from patch to output.
 
+If you have a empty file in patch, it will not copy a file from orig nor from patch. This allows you to revert files from orig back to mc default.
+
 ## Custom Models
 
 This tools allows you to easily add new custom models.  
