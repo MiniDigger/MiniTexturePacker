@@ -153,18 +153,15 @@ public class MiniTexturePacker {
             // copy over fully custom files
             Path patchFolder = patch.resolve(folderName);
             if (Files.isDirectory(patchFolder)) {
-                Files.list(patchFolder).parallel().forEach(folder -> {
-                    String patchFolderName = folder.getFileName().toString();
-                    Path outputFolder = output.resolve(folderName).resolve(patchFolderName);
-                    if (!Files.isDirectory(outputFolder)) {
-                        try {
-                            Files.createDirectories(outputFolder);
-                        } catch (IOException e) {
-                            System.out.println("Error while creating " + outputFolder + " folder: " + e.getClass().getName() + ": " + e.getMessage());
-                        }
+                Path outputFolder = output.resolve(folderName);
+                if (!Files.isDirectory(outputFolder)) {
+                    try {
+                        Files.createDirectories(outputFolder);
+                    } catch (IOException e) {
+                        System.out.println("Error while creating " + outputFolder + " folder: " + e.getClass().getName() + ": " + e.getMessage());
                     }
-                    copyNewFiles(folder, outputFolder, brightenFactor);
-                });
+                }
+                copyNewFiles(patchFolder, outputFolder, brightenFactor);
             }
             System.out.println("Done!");
         } catch (IOException e) {
@@ -242,7 +239,7 @@ public class MiniTexturePacker {
             try {
                 // 0 file in patch? -> skip
                 if (Files.size(file) == 0) {
-                   return;
+                    return;
                 }
             } catch (IOException e) {
                 System.err.println("Can't read file " + name + " in patch to figure out its size!");
