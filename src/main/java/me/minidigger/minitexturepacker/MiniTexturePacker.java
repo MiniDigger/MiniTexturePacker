@@ -40,8 +40,8 @@ public class MiniTexturePacker {
         copyFolder("optifine", 1);
         copyFolder("models", 1);
         copyFolder("blockstates", 1);
+        copyFolder("font", 1);
         copySplashes();
-        copyFont();
     }
 
     private void cleanOutput() {
@@ -88,27 +88,6 @@ public class MiniTexturePacker {
         }
     }
 
-    private void copyFont() {
-        System.out.print("Copying font... ");
-        String name = "assets" + S + "minecraft" + S + "font" + S + "glyph_sizes.bin";
-        Path splashes = patch.resolve(name);
-        if (Files.isRegularFile(splashes)) {
-            try {
-                Files.createDirectories(output.resolve("assets" + S + "minecraft" + S + "font"));
-            } catch (IOException e) {
-                System.out.println("Error creating font folder: " + e.getClass().getName() + ": " + e.getMessage());
-            }
-            try {
-                Files.copy(splashes, output.resolve(name));
-                System.out.println("Done!");
-            } catch (IOException e) {
-                System.out.println("Error while copying font: " + e.getClass().getName() + ": " + e.getMessage());
-            }
-        } else {
-            System.out.println("No font found");
-        }
-    }
-
     private void copySoundsJson() {
         System.out.print("Copying sounds.json... ");
         String name = "assets" + S + "minecraft" + S + "sounds.json";
@@ -141,15 +120,18 @@ public class MiniTexturePacker {
         }
         System.out.println("Done");
         System.out.print("Copying " + name + "... ");
+        Path ogFolder = original.resolve(folderName);
         try {
             // copy over files from original, using patch files if they are there
-            Files.list(original.resolve(folderName)).parallel().forEach(folder -> {
-                if (Files.isDirectory(folder)) {
-                    copyFolder(folderName, folder, brightenFactor);
-                } else if (Files.isRegularFile(folder)) {
-                    copyFitting(folder.getFileName().toString(), original.resolve(folderName), patch.resolve(folderName), output.resolve(folderName), brightenFactor);
-                }
-            });
+            if (Files.isDirectory(ogFolder)) {
+                Files.list(ogFolder).parallel().forEach(folder -> {
+                    if (Files.isDirectory(folder)) {
+                        copyFolder(folderName, folder, brightenFactor);
+                    } else if (Files.isRegularFile(folder)) {
+                        copyFitting(folder.getFileName().toString(), ogFolder, patch.resolve(folderName), output.resolve(folderName), brightenFactor);
+                    }
+                });
+            }
             // copy over fully custom files
             Path patchFolder = patch.resolve(folderName);
             if (Files.isDirectory(patchFolder)) {
@@ -165,7 +147,7 @@ public class MiniTexturePacker {
             }
             System.out.println("Done!");
         } catch (IOException e) {
-            System.out.println("Error while listing files " + original.resolve(folderName) + ": " + e.getClass().getName() + ": " + e.getMessage());
+            System.out.println("Error while listing files " + ogFolder + ": " + e.getClass().getName() + ": " + e.getMessage());
         }
     }
 
