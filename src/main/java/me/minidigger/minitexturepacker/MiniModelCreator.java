@@ -9,9 +9,12 @@ import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class MiniModelCreator {
 
@@ -37,7 +40,9 @@ public class MiniModelCreator {
 
         Path mappingFile = input.resolve(mappingFileName);
         Map<String, Integer> mapping = loadMappings(mappingFile);
-        processMappings(modelDir, models, mapping);
+        AtomicInteger nextId = new AtomicInteger(findNextId(mapping));
+        deduplicateMappings(mapping, nextId);
+        processMappings(modelDir, models, mapping, nextId);
         writeMappings(mapping, mappingFile);
 
         Path inputFile = input.resolve("assets" + S + "minecraft" + S + "models" + S + "item" + S + itemToOverride + ".json");
@@ -66,13 +71,14 @@ public class MiniModelCreator {
         }
     }
 
-    private void processMappings(Path modelDir, List<Path> models, Map<String, Integer> mappings) {
+    private void processMappings(Path modelDir, List<Path> models, Map<String, Integer> mappings, AtomicInteger nextId) {
         models.forEach(model -> {
             Path newPath = modelDir.relativize(model);
             String path = newPath.toString().replace("/", "|").replace("\\", "|");
             if (!mappings.containsKey(path)) {
-                System.out.println("Creating new mapping for new model " + newPath + ": " + (mappings.size() + 1));
-                mappings.put(path, mappings.size() + 1);
+                int id = nextId.incrementAndGet();
+                System.out.println("Creating new mapping for new model " + newPath + ": " + id);
+                mappings.put(path, id);
             }
         });
     }
@@ -105,6 +111,25 @@ public class MiniModelCreator {
         }
 
         return mappings;
+    }
+
+    private void deduplicateMappings(Map<String, Integer> mappings, AtomicInteger nextId) {
+        Set<Integer> ids = new HashSet<>();
+        for (String key : new HashSet<>(mappings.keySet())) {
+            int id = mappings.get(key);
+            if (ids.contains(id)) {
+                int newId = nextId.incrementAndGet();
+                System.out.println("found duplicate id for " + id + ", assigning new id " + newId + " (" + key +")...");
+                mappings.remove(key);
+                mappings.put(key, newId);
+            } else {
+                ids.add(id);
+            }
+        }
+    }
+
+    private int findNextId(Map<String, Integer> mappings) {
+        return mappings.values().stream().mapToInt(e -> e).max().orElse(1);
     }
 
     private List<Path> findModels(Path modelDir) {
