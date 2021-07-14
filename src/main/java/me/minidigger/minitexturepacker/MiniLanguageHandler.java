@@ -15,6 +15,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class MiniLanguageHandler {
 
@@ -29,6 +30,7 @@ public class MiniLanguageHandler {
     }
 
     public void process() {
+        System.out.print("Writing lang injections... ");
         Path outputLangFolder = output.resolve("assets/minecraft/lang/");
         JSONObject assets;
         try {
@@ -38,31 +40,33 @@ public class MiniLanguageHandler {
             e.printStackTrace();
             return;
         }
+        AtomicInteger count = new AtomicInteger();
+        AtomicInteger existing = new AtomicInteger();
         assets.getJSONObject("objects")
                 .keySet()
                 .stream()
                 .filter(k -> k.startsWith("minecraft/lang/"))
-                .map(key -> assets.getJSONObject("objects").getJSONObject(key).getString("hash"))
-                .map(hash -> "https://resources.download.minecraft.net/" + hash.substring(0, 2) + "/" + hash)
-                .parallel()
-                .forEach(url -> {
+                .map(k -> k.replace("minecraft/lang/", ""))
+                .forEach(filename -> {
                     try {
-                        JSONObject json = readJsonFromUrl(url);
-                        String filename = json.getString("language.code") + ".json";
-
                         Path outputFile = outputLangFolder.resolve(filename);
+                        JSONObject json = new JSONObject();
                         if (Files.isRegularFile(outputFile)) {
-                            // we already had a file, thats sad, just read that
+                            // we already had a file, read that
                             json = readJsonFromPath(outputFile);
+                            existing.incrementAndGet();
                         }
 
                         merge(json);
                         writeJsonToPath(json, outputFile);
+                        count.incrementAndGet();
                     } catch (IOException e) {
-                        System.err.println("Error while processing asset " + url);
+                        System.err.println("Error while processing lang asset " + filename);
                         e.printStackTrace();
                     }
                 });
+
+        System.out.println("Wrote " + count.get() + " lang files, found " + existing.get() + " existing files!");
     }
 
     private void merge(JSONObject json) throws IOException {
