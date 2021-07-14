@@ -42,6 +42,7 @@ public class MiniTexturePacker {
         copyFolder("blockstates", 1);
         copyFolder("font", 1);
         copySplashes();
+        copyFolder("lang", 1);
     }
 
     private void cleanOutput() {
