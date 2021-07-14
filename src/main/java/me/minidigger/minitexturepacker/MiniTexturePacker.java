@@ -19,6 +19,7 @@ public class MiniTexturePacker {
 
         new MiniTexturePacker(mainDir.resolve("original"), mainDir.resolve("patch"), mainDir.resolve("output")).patch(brightenFactor);
         new MiniModelCreator(mainDir.resolve("patch"), mainDir.resolve("output"), "dyescape", "diamond_sword").process();
+        new MiniLanguageHandler(mainDir.resolve("patch"), mainDir.resolve("output")).process();
     }
 
     private final Path original;

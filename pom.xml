@@ -8,6 +8,14 @@
     <artifactId>MiniTexturePacker</artifactId>
     <version>1.0.0-SNAPSHOT</version>
 
+    <dependencies>
+        <dependency>
+            <groupId>org.json</groupId>
+            <artifactId>json</artifactId>
+            <version>20210307</version>
+        </dependency>
+    </dependencies>
+
     <build>
         <finalName>minitexturepacker</finalName>
         <plugins>
