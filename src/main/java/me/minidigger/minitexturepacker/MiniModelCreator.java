@@ -48,10 +48,6 @@ public class MiniModelCreator {
         Path inputFile = input.resolve("assets" + S + "minecraft" + S + "models" + S + "item" + S + itemToOverride + ".json");
         Path outputFile = output.resolve("assets" + S + "minecraft" + S + "models" + S + "item" + S + itemToOverride + ".json");
         copyItemAndWriteModels(inputFile, outputFile, mapping);
-
-        inputFile = input.resolve("assets" + S + namespace);
-        outputFile = output.resolve("assets" + S + namespace);
-        copyCustomStuff(inputFile, outputFile);
     }
 
     private void copyCustomStuff(Path input, Path output) {

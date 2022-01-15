@@ -10,15 +10,17 @@ public class MiniTexturePacker {
     private static final String S = File.separator;
 
     public static void main(String[] args) {
-        if (args.length != 2) {
-            System.out.println("Usage: java -jar minitexturepacker /path/to/dir <factor>");
+        if (args.length < 2) {
+            System.out.println("Usage: java -jar minitexturepacker /path/to/dir <factor> [namespace] [itemToOverride]");
             return;
         }
         Path mainDir = Path.of(args[0]);
         float brightenFactor = Float.parseFloat(args[1]);
+        String namespace = args.length >= 3 ? args[2] : "dyescape";
+        String itemToOverride = args.length >= 4 ? args[3] : "diamond_sword";
 
         new MiniTexturePacker(mainDir.resolve("original"), mainDir.resolve("patch"), mainDir.resolve("output")).patch(brightenFactor);
-        new MiniModelCreator(mainDir.resolve("patch"), mainDir.resolve("output"), "dyescape", "diamond_sword").process();
+        new MiniModelCreator(mainDir.resolve("patch"), mainDir.resolve("output"), namespace, itemToOverride).process();
         new MiniLanguageHandler(mainDir.resolve("patch"), mainDir.resolve("output")).process();
     }
 
@@ -35,15 +37,16 @@ public class MiniTexturePacker {
     public void patch(float brightenFactor) {
         cleanOutput();
         copyMeta();
-        copyFolder("textures", brightenFactor);
-        copyFolder("sounds", 1);
+        copyFolder("minecraft", "textures", brightenFactor);
+        copyFolder("minecraft", "sounds", 1);
         copySoundsJson();
-        copyFolder("optifine", 1);
-        copyFolder("models", 1);
-        copyFolder("blockstates", 1);
-        copyFolder("font", 1);
+        copyFolder("minecraft", "optifine", 1);
+        copyFolder("minecraft", "models", 1);
+        copyFolder("minecraft", "blockstates", 1);
+        copyFolder("minecraft", "font", 1);
         copySplashes();
-        copyFolder("lang", 1);
+        copyFolder("minecraft", "lang", 1);
+        copyOtherNamespaces();
     }
 
     private void cleanOutput() {
@@ -106,22 +109,38 @@ public class MiniTexturePacker {
         }
     }
 
+    private void copyOtherNamespaces() {
+        System.out.println("Copying other namespaces... ");
+        try {
+            Files.list(patch.resolve("assets"))
+                    .filter(f -> !f.getFileName().toString().equals("minecraft"))
+                    .filter(f -> !f.getFileName().toString().startsWith("."))
+                    .forEach(f -> {
+                        copyFolder(f.getFileName().toString(), "", 1);
+                    });
+            System.out.println("ALL DONE!");
+        } catch (IOException e) {
+            System.out.println("Error while copying sounds.json: " + e.getClass().getName() + ": " + e.getMessage());
+        }
+    }
+
     // util shit
 
-    private void copyFolder(String name, float brightenFactor) {
-        System.out.print("Creating " + name + " folder... ");
+    private void copyFolder(String namespace, String name, float brightenFactor) {
+        String nameThing = (name.length() > 0 ? name : namespace);
+        System.out.print("Creating " + nameThing + " folder... ");
         if (brightenFactor != 1) {
             System.out.print("Also brighten it with factor " + brightenFactor + "... ");
         }
-        String folderName = "assets" + S + "minecraft" + S + "" + name;
+        String folderName = "assets" + S + namespace + S + "" + name;
         try {
             Files.createDirectories(output.resolve(folderName));
         } catch (IOException e) {
-            System.out.println("Error while creating " + name + " folder: " + e.getClass().getName() + ": " + e.getMessage());
+            System.out.println("Error while creating " + nameThing + " folder: " + e.getClass().getName() + ": " + e.getMessage());
             return;
         }
         System.out.println("Done");
-        System.out.print("Copying " + name + "... ");
+        System.out.print("Copying " + nameThing + "... ");
         Path ogFolder = original.resolve(folderName);
         try {
             // copy over files from original, using patch files if they are there
