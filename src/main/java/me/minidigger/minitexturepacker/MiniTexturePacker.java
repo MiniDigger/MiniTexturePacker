@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Map;
 
 public class MiniTexturePacker {
 
@@ -18,9 +19,10 @@ public class MiniTexturePacker {
         float brightenFactor = Float.parseFloat(args[1]);
         String namespace = args.length >= 3 ? args[2] : "dyescape";
         String itemToOverride = args.length >= 4 ? args[3] : "diamond_sword";
+        Map<String, String> itemsToOverride = Map.of("default", itemToOverride, "bow", "bow"); // TODO make this more configurable
 
         new MiniTexturePacker(mainDir.resolve("original"), mainDir.resolve("patch"), mainDir.resolve("output")).patch(brightenFactor);
-        new MiniModelCreator(mainDir.resolve("patch"), mainDir.resolve("output"), namespace, itemToOverride).process();
+        new MiniModelCreator(mainDir.resolve("patch"), mainDir.resolve("output"), namespace, itemsToOverride).process();
         new MiniLanguageHandler(mainDir.resolve("patch"), mainDir.resolve("output")).process();
     }
 
