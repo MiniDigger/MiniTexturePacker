@@ -48,6 +48,10 @@ public class MiniTexturePacker {
         copyFolder("minecraft", "font", 1);
         copySplashes();
         copyFolder("minecraft", "lang", 1);
+        copyFolder("minecraft", "shaders", 1);
+        copyFolder("minecraft", "icons", 1);
+        copyFolder("minecraft", "particles", 1);
+        copyFolder("minecraft", "texts", 1);
         copyOtherNamespaces();
     }
 
