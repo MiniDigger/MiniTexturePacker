@@ -80,6 +80,25 @@ The tools will then write all custom models into the overrides section.
 It will also create a mappings.csv where you can read which CustomModelData id has been assigned to the model.  
 You should never delete that file, as if you regenerate it, the IDs might change, which would be bad if you already use them.
 
+### Bows
+
+Bows are specially handled, to make it easier to deal with their multiple stages. For convince, MiniTexturePacker bundles the bow template. You only need to override it, if you want to override the vanilla bow.  
+MiniTexturePacker allows you to specify the pull factor in the file name, no pull factor means not pulling, 0 means start of the pull, 100 means end of the pull.  
+So for a nice animation, you most likely will end up with files like this:
+```
+my_cool_bow.bow.0.json
+my_cool_bow.bow.65.json
+my_cool_bow.bow.90.json
+my_cool_bow.bow.json
+```
+the resulting predicates would look like this
+```json
+{ "predicate": { "custom_model_data": 2, "pulling": 0, "pull": 0}, "model": "namespace:item/my_cool_bow.bow"},
+{ "predicate": { "custom_model_data": 2, "pulling": 1, "pull": 0.0}, "model": "namespace:item/my_cool_bow.bow.0"},
+{ "predicate": { "custom_model_data": 2, "pulling": 1, "pull": 0.9}, "model": "namespace:item/my_cool_bow.bow.90"},
+{ "predicate": { "custom_model_data": 2, "pulling": 1, "pull": 0.65}, "model": "namespace:item/my_cool_bow.bow.65"},
+```
+
 ## Language overrides
 
 This tool allows you to easily override a string in all languages.  

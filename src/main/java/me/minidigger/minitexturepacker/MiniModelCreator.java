@@ -9,25 +9,29 @@ import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 public class MiniModelCreator {
 
-    record Mapping(String name, String path, int id, String type) {
+    record Mapping(String name, String path, int id, String type, Set<String> subTypes) {
         public String csv() {
-            return name() + "," + id() + "," + path() + "," + type();
+            // name, id, path, type, subTypes (optional)
+            return name() + "," + id() + "," + path() + "," + type() + (!subTypes().isEmpty() ? "," + subTypes().stream().sorted().collect(Collectors.joining("|")) : "");
         }
     }
 
     private static final String S = File.separator;
-    private static final String template = "\t\t{ \"predicate\": {\"custom_model_data\":  %s}, \"model\": \"%s\"},";
     private static final String mappingFileName = "mappings.csv";
 
     private final Path input;
@@ -59,22 +63,48 @@ public class MiniModelCreator {
     }
 
     private void processMappings(Path modelDir, List<Path> models, Map<String, Mapping> mappings, AtomicInteger nextId) {
+        Map<String, Set<String>> cache = new HashMap<>();
         models.forEach(model -> {
             Path newPath = modelDir.relativize(model);
             String path = newPath.toString().replace("/", "|").replace("\\", "|");
             if (!mappings.containsKey(path)) {
-                int id = nextId.incrementAndGet();
                 String type = "default";
+                String subType = null;
                 String filename = newPath.getFileName().toString().replace(".json", "");
+                // if we have an ., there is type info
                 int index = filename.indexOf(".");
                 if (index != -1) {
                     type = filename.substring(index + 1);
                 }
+                // if type has a dot, the type has subtypes
+                if (type.contains(".")) {
+                    String[] split = type.split("\\.");
+                    type = split[0];
+                    subType = split[1];
+                }
+
                 String name = path.replace(".json", "").replace("|", " ").replace("." + type, "");
+                // attempt to store subtype
+                if (subType != null) {
+                    String pathWithoutSubtype = path.replace("." + subType, "");
+                    if (mappings.containsKey(pathWithoutSubtype)) {
+                        mappings.get(pathWithoutSubtype).subTypes().add(subType);
+                    } else {
+                        cache.computeIfAbsent(pathWithoutSubtype, k -> new HashSet<>()).add(subType);
+                    }
+                    return;
+                }
+
+                int id = nextId.incrementAndGet();
                 System.out.println("Creating new mapping for new model " + name + " with mapping " + newPath + ": " + id + " using type " + type);
-                mappings.put(path, new Mapping(name,path, id, type));
+                Set<String> subtypes = Optional.ofNullable(cache.remove(path)).orElse(new HashSet<>());
+                mappings.put(path, new Mapping(name, path, id, type, subtypes));
             }
         });
+
+        if (!cache.isEmpty()) {
+            System.err.println("Something is wrong in the setup of " + String.join(",", cache.keySet()));
+        }
     }
 
     private void writeMappings(Map<String, Mapping> mappings, Path mappingFile) {
@@ -97,8 +127,9 @@ public class MiniModelCreator {
                 int id = Integer.parseInt(s[1]);
                 String path = s[2];
                 String type = s.length > 3 ? s[3] : "default";
+                Set<String> subTypes = s.length > 4 ? new HashSet<>(Arrays.asList(s[4].split("\\|"))) : new HashSet<>();
 
-                mappings.put(path, new Mapping(name, path, id, type));
+                mappings.put(path, new Mapping(name, path, id, type, subTypes));
             });
             System.out.println("Loaded " + mappings.size() + " mappings!");
         } catch (IOException ex) {
@@ -117,7 +148,7 @@ public class MiniModelCreator {
                 int newId = nextId.incrementAndGet();
                 System.out.println("found duplicate id for " + id + ", assigning new id " + newId + " (" + key +")...");
                 mappings.remove(key);
-                mappings.put(key, new Mapping(old.name(), old.path(), newId, old.type()));
+                mappings.put(key, new Mapping(old.name(), old.path(), newId, old.type(), old.subTypes()));
             } else {
                 ids.add(id);
             }
@@ -165,12 +196,36 @@ public class MiniModelCreator {
         System.out.print("Writing item models of type " + type + " to template file " + itemToOverride + ".json... ");
         AtomicBoolean foundMarker = new AtomicBoolean(false);
         try (PrintWriter writer = new PrintWriter(Files.newBufferedWriter(outputFile))) {
-            Files.readAllLines(inputFile).forEach(line -> {
+            // find template
+            List<String> lines;
+            if (!Files.exists(inputFile)) {
+                if (type.equals("bow")) {
+                    lines = Arrays.asList(Templates.BOW.split("\n"));
+                } else {
+                    System.err.println("Template file for type " + type + " doesn't exist!");
+                    return;
+                }
+            } else {
+                lines = Files.readAllLines(inputFile);
+            }
+
+            // write
+            lines.forEach(line -> {
                 if (line.contains("%mini_model_creator_marker%")) {
                     foundMarker.set(true);
-                    mappings.entrySet().stream().filter(e -> e.getValue().type().equals(type)).sorted(Comparator.comparing(e -> e.getValue().id())).forEach((entry) -> {
+                    mappings.entrySet().stream()
+                            .filter(e -> e.getValue().type().equals(type))
+                            .sorted(Comparator.comparing(e -> e.getValue().id()))
+                            .forEach(entry -> {
                         String properPath = namespace + ":" + entry.getKey().replace("|", "/").replace(".json", "");
-                        writer.println(String.format(template, entry.getValue().id, properPath));
+                        if (type.equals("bow")) {
+                            writer.println(String.format(Templates.BOW_PREDICATE, entry.getValue().id, 0, 0, properPath));
+                            for (String subType : entry.getValue().subTypes()) {
+                                writer.println(String.format(Templates.BOW_PREDICATE, entry.getValue().id, 1, Integer.parseInt(subType) / 100d, properPath + "." + subType));
+                            }
+                        } else {
+                            writer.println(String.format(Templates.PREDICATE, entry.getValue().id, properPath));
+                        }
                     });
 
                     writer.println("\t\t{ \"predicate\": {\"custom_model_data\":  13371337}, \"model\": \"dyescape:items/steel_mace\"}"); // dummy to fix trailing semicolon
