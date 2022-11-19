@@ -219,16 +219,17 @@ public class MiniModelCreator {
                             .forEach(entry -> {
                         String properPath = namespace + ":" + entry.getKey().replace("|", "/").replace(".json", "");
                         if (type.equals("bow")) {
-                            writer.println(String.format(Templates.BOW_PREDICATE, entry.getValue().id, 0, 0, properPath));
-                            for (String subType : entry.getValue().subTypes()) {
-                                writer.println(String.format(Templates.BOW_PREDICATE, entry.getValue().id, 1, Integer.parseInt(subType) / 100d, properPath + "." + subType));
-                            }
+                            writer.printf(Templates.BOW_PREDICATE, entry.getValue().id, 0, 0.0, properPath);
+                            // these need to be sorted, thanks mojang https://bugs.mojang.com/browse/MC-158872 https://www.reddit.com/r/Minecraft/comments/fws0gw/custom_bow_with_custommodeldata/
+                            entry.getValue().subTypes()
+                                    .stream().sorted()
+                                    .forEach(subType -> writer.printf(Templates.BOW_PREDICATE, entry.getValue().id, 1, Integer.parseInt(subType) / 100d, properPath + "." + subType));
                         } else {
-                            writer.println(String.format(Templates.PREDICATE, entry.getValue().id, properPath));
+                            writer.printf(Templates.PREDICATE, entry.getValue().id, properPath);
                         }
                     });
 
-                    writer.println("\t\t{ \"predicate\": {\"custom_model_data\":  13371337}, \"model\": \"dyescape:items/steel_mace\"}"); // dummy to fix trailing semicolon
+                    writer.println("    { \"predicate\": {\"custom_model_data\":  13371337}, \"model\": \"dyescape:items/steel_mace\"}"); // dummy to fix trailing semicolon
                 } else {
                     writer.println(line);
                 }

@@ -3,10 +3,12 @@ package me.minidigger.minitexturepacker;
 public class Templates {
 
     public static final String PREDICATE = """
-            { "predicate": {"custom_model_data":  %s}, "model": "%s"},""";
+                { "predicate": {"custom_model_data":  %s}, "model": "%s"},
+            """;
 
     public static final String BOW_PREDICATE = """
-            { "predicate": { "custom_model_data": %s, "pulling": %s, "pull": %s}, "model": "%s"},""";
+                { "predicate": { "custom_model_data": %s, "pulling": %s, "pull": %s}, "model": "%s"},
+            """;
 
     //language=JSON
     public static final String BOW = """
