@@ -42,7 +42,8 @@ stuff/
     └── pack.png
 ```
 
-And then run `java -jar minitexturepacker.jar \path\to\stuff <brighten factor>`
+And then run `java -jar minitexturepacker.jar --dir \path\to\stuff --namespace <your namespace>`  
+Run the jar with `--help` for a list of supported arguments.
 
 It currently handles the following things:
 * pack.mcmeta + pack.png
@@ -56,14 +57,14 @@ It currently handles the following things:
 * models
 * language
 
-Unless overwise noted, it will copy original to output, but first looks into patch for an updates file, then copies all new files from patch to output.
+Unless otherwise noted, it will copy original to output, but first looks into patch for an updates file, then copies all new files from patch to output.
 
-If you have a empty file in patch, it will not copy a file from orig nor from patch. This allows you to revert files from orig back to mc default.
+If you have an empty file in patch, it will not copy a file from orig nor from patch. This allows you to revert files from orig back to mc default.
 
 ## Custom Models
 
 This tool allows you to easily add new custom models.  
-All you need to do is add your models and textures to your custom namespaces and define a template item you want to override, eg. a diamond sword.
+All you need to do is add your models and textures to your custom namespaces and define a template item you want to override, e.g. a diamond sword.
 This diamond_sword.json should look like this:
 ```json
 {
@@ -79,6 +80,8 @@ This diamond_sword.json should look like this:
 The tools will then write all custom models into the overrides section.  
 It will also create a mappings.csv where you can read which CustomModelData id has been assigned to the model.  
 You should never delete that file, as if you regenerate it, the IDs might change, which would be bad if you already use them.
+
+The argument `--item default=diamond_sword` allows you to change which item to patch and even to specify multiple types.
 
 ### Bows
 
